@@ -1,0 +1,46 @@
+function createEPubFile(fileId, filename, bookhighligthsEPub) {
+  const url = "https://docs.google.com/feeds/download/documents/export/Export?exportFormat=epub&id=" + fileId;
+  const params = { headers: { authorization: `Bearer ${ScriptApp.getOAuthToken()}` } };
+  const blob = UrlFetchApp.fetch(url, params).getBlob().setName(`${filename}.epub`);
+
+  //var link = Drive.Files.get(fileId).exportLinks["application/epub+zip"];
+  const createdFileId = bookhighligthsEPub.createFile(blob).getId();
+
+  //DriveApp.createFile(response.getBlob()).setName("file.epub");
+}
+
+function convert(fileId) {
+    const exportLink = "https://docs.google.com/feeds/download/documents/export/Export?exportFormat=epub&id=" + fileId;
+
+  var link = Drive.Files.get(fileId).exportLinks["application/epub+zip"];
+  var response = UrlFetchApp.fetch(exportLink, {
+    headers: {
+      Authorization: "Bearer " + ScriptApp.getOAuthToken()
+    }
+  });
+  DriveApp.createFile(response.getBlob()).setName("file.epub");
+}
+
+function processDirectory() {
+  var bookhighligths = DriveApp.getFoldersByName("Book highligths").next();
+  var bookhighligthsEPub = DriveApp.getFoldersByName("Book highligths epub").next();
+  var bookhighligthsFiles = bookhighligths.getFiles()
+
+
+
+  while (bookhighligthsFiles.hasNext()) {
+    file = bookhighligthsFiles.next();
+    sourceFileName = file.getName();
+    console.log(sourceFileName);
+
+    highlightsDoc = createEPubFile(file.getId(),sourceFileName, bookhighligthsEPub);
+    //processDokument(file, bookhighligthsEPub);
+    console.log(file.getId())
+    //convert(file.getId())
+  }
+}
+
+
+function myFunction() {
+  processDirectory();
+}
