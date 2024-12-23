@@ -28,6 +28,33 @@ function convert(fileId) {
   DriveApp.createFile(response.getBlob()).setName("file.epub");
 }
 
+function createResultFile() {
+
+}
+
+
+function mergeGoogleDocs(destId, docIDs) {
+  //var docIDs = ['xxxx' , 'xxxx', 'xxxx'];
+  var baseDoc = DocumentApp.openById(destId);
+
+  var body = baseDoc.getActiveSection();
+  // Clear existing content in the master document
+  baseDoc.getBody().clear();
+
+  for (var i = 0; i < docIDs.length; ++i) {
+    var otherBody = DocumentApp.openById(docIDs[i]).getActiveSection();
+    var totalElements = otherBody.getNumChildren();
+    for (var j = 0; j < totalElements; ++j) {
+      var element = otherBody.getChild(j).copy();
+      var type = element.getType();
+      if (type == DocumentApp.ElementType.PARAGRAPH) { body.appendParagraph(element); }
+      else if (type == DocumentApp.ElementType.TABLE) { body.appendTable(element); }
+      else if (type == DocumentApp.ElementType.LIST_ITEM) { body.appendListItem(element.asListItem().getText()).setAttributes(element.getAttributes()); }
+      else throw new Error('Unknown element type: ' + type);
+    }
+  }
+}
+
 function processDirectory() {
   var bookhighligthsDirectory = DriveApp.getFoldersByName("Book highligths").next();
   var bookhighligthsEPubDirectory = DriveApp.getFoldersByName("Book highligths epub").next();
@@ -35,17 +62,33 @@ function processDirectory() {
 
   RemoveAllEpubs(bookhighligthsEPubDirectory)
 
-
+  var docIds = []
+  var resultId = undefined;
   while (bookhighligthsFiles.hasNext()) {
     file = bookhighligthsFiles.next();
     sourceFileName = file.getName();
-    console.log(sourceFileName);
-
-    highlightsDoc = createEPubFile(file.getId(), sourceFileName, bookhighligthsEPubDirectory);
+    if (sourceFileName == "HighlightsMerged") {
+      resultId = file.getId();
+    }
+    else {
+      var id = file.getId();
+      docIds.push(id);
+      console.log(sourceFileName);
+    }
+    //highlightsDoc = createEPubFile(file.getId(), sourceFileName, bookhighligthsEPubDirectory);
     //processDokument(file, bookhighligthsEPubDirectory);
-    console.log(file.getId())
+    //console.log(file.getId())
     //convert(file.getId())
   }
+  if(resultId==undefined){
+    var resultDoc= DocumentApp.create('HighlightsMerged');
+    var resultId=resultDoc.getId();
+    var fileResultDoc=  DriveApp.getFileById(resultId);
+    fileResultDoc.moveTo(bookhighligthsDirectory);
+    
+
+  }
+  mergeGoogleDocs(resultId, docIds)
 }
 
 
