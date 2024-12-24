@@ -14,6 +14,7 @@ function createEPubFile(fileId, filename, bookhighligthsEPub) {
   const params = { headers: { authorization: `Bearer ${ScriptApp.getOAuthToken()}` } };
   const blob = UrlFetchApp.fetch(exportLink, params).getBlob().setName(`${filename}.epub`);
   const createdFileId = bookhighligthsEPub.createFile(blob).getId();
+  console.log(createdFileId)
 }
 
 function convert(fileId) {
@@ -25,7 +26,7 @@ function convert(fileId) {
       Authorization: "Bearer " + ScriptApp.getOAuthToken()
     }
   });
-  DriveApp.createFile(response.getBlob()).setName("file.epub");
+  DriveApp.createFile(response.getBlob()).setName("pwfile.epub");
 }
 
 function createResultFile() {
@@ -60,14 +61,16 @@ function processDirectory() {
   var bookhighligthsEPubDirectory = DriveApp.getFoldersByName("Book highligths epub").next();
   var bookhighligthsFiles = bookhighligthsDirectory.getFiles()
 
-  RemoveAllEpubs(bookhighligthsEPubDirectory)
+  const mergedFilename="HighlightsMerged"
+
+  //RemoveAllEpubs(bookhighligthsEPubDirectory)
 
   var docIds = []
   var resultId = undefined;
   while (bookhighligthsFiles.hasNext()) {
     file = bookhighligthsFiles.next();
     sourceFileName = file.getName();
-    if (sourceFileName == "HighlightsMerged") {
+    if (sourceFileName == mergedFilename) {
       resultId = file.getId();
     }
     else {
@@ -75,13 +78,10 @@ function processDirectory() {
       docIds.push(id);
       console.log(sourceFileName);
     }
-    //highlightsDoc = createEPubFile(file.getId(), sourceFileName, bookhighligthsEPubDirectory);
-    //processDokument(file, bookhighligthsEPubDirectory);
-    //console.log(file.getId())
-    //convert(file.getId())
+    
   }
   if(resultId==undefined){
-    var resultDoc= DocumentApp.create('HighlightsMerged');
+    var resultDoc= DocumentApp.create(mergedFilename);
     var resultId=resultDoc.getId();
     var fileResultDoc=  DriveApp.getFileById(resultId);
     fileResultDoc.moveTo(bookhighligthsDirectory);
@@ -89,6 +89,10 @@ function processDirectory() {
 
   }
   mergeGoogleDocs(resultId, docIds)
+  highlightsDoc = createEPubFile(resultId, mergedFilename,  bookhighligthsDirectory);
+  //processDokument(file, bookhighligthsEPubDirectory);
+  console.log(resultId)
+  convert(resultId)
 }
 
 
