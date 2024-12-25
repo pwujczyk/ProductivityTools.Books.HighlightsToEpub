@@ -8,9 +8,13 @@ function RemoveAllEpubs(bookhighligthsEPubDirectory) {
   }
 }
 
-function createEPubFile(fileId, filename, bookhighligthsEPub) {
+function createEPubFile(mergedFileId, filename, bookhighligthsEPub) {
+
   var mimeType = 'application/epub+zip';
-  var exportLink = Drive.Files.get(fileId).exportLinks[mimeType];
+  var x=DocumentApp.openById(mergedFileId);
+  var body=x.getBody().getText();
+
+  var exportLink = Drive.Files.get(mergedFileId).exportLinks[mimeType];
   const params = { headers: { authorization: `Bearer ${ScriptApp.getOAuthToken()}` } };
   const blob = UrlFetchApp.fetch(exportLink, params).getBlob().setName(`${filename}.epub`);
   const createdFileId = bookhighligthsEPub.createFile(blob).getId();
@@ -39,13 +43,14 @@ function mergeGoogleDocs(destId, docIDs) {
   var baseDoc = DocumentApp.openById(destId);
 
   var body = baseDoc.getActiveSection();
-  // Clear existing content in the master document
+  // Clear existing content in the master document//
   baseDoc.getBody().clear();
 
   for (var i = 0; i < docIDs.length; ++i) {
     var otherBody = DocumentApp.openById(docIDs[i]).getActiveSection();
     var totalElements = otherBody.getNumChildren();
     for (var j = 0; j < totalElements; ++j) {
+      console.log(j)
       var element = otherBody.getChild(j).copy();
       var type = element.getType();
       if (type == DocumentApp.ElementType.PARAGRAPH) { body.appendParagraph(element); }
@@ -54,6 +59,7 @@ function mergeGoogleDocs(destId, docIDs) {
       else throw new Error('Unknown element type: ' + type);
     }
   }
+  baseDoc.saveAndClose();
 }
 
 function processDirectory() {
@@ -66,12 +72,12 @@ function processDirectory() {
   //RemoveAllEpubs(bookhighligthsEPubDirectory)
 
   var docIds = []
-  var resultId = undefined;
+  var mergedFileId = undefined;
   while (bookhighligthsFiles.hasNext()) {
     file = bookhighligthsFiles.next();
     sourceFileName = file.getName();
     if (sourceFileName == mergedFilename) {
-      resultId = file.getId();
+      mergedFileId = file.getId();
     }
     else {
       var id = file.getId();
@@ -80,19 +86,31 @@ function processDirectory() {
     }
     
   }
-  if(resultId==undefined){
+  if(mergedFileId==undefined){
     var resultDoc= DocumentApp.create(mergedFilename);
-    var resultId=resultDoc.getId();
-    var fileResultDoc=  DriveApp.getFileById(resultId);
+    var mergedFileId=resultDoc.getId();
+    var fileResultDoc=  DriveApp.getFileById(mergedFileId);
     fileResultDoc.moveTo(bookhighligthsDirectory);
     
 
   }
-  mergeGoogleDocs(resultId, docIds)
-  highlightsDoc = createEPubFile(resultId, mergedFilename,  bookhighligthsDirectory);
-  //processDokument(file, bookhighligthsEPubDirectory);
-  console.log(resultId)
-  convert(resultId)
+  mergeGoogleDocs(mergedFileId, docIds)
+  var x=DocumentApp.openById(mergedFileId)
+  var body=x.getBody().getText()
+  console.log(mergedFileId)
+  console.log("files merged");
+  highlightsDoc = createEPubFile(mergedFileId, mergedFilename,  bookhighligthsDirectory);
+  console.log(mergedFileId)
+}
+
+function CreateEpub()
+{
+var mergedFileId="19prvjEGt3MWrd5i1kmnhcf78_ZhoQx8yJwxXi9u8y8g";
+var mergedFilename="fdasfa"
+var bookhighligthsDirectory = DriveApp.getFoldersByName("Book highligths").next();
+
+highlightsDoc = createEPubFile(mergedFileId, mergedFilename,  bookhighligthsDirectory);
+  
 }
 
 
